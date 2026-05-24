@@ -4,17 +4,25 @@
 
 | | |
 |---|---|
-| Project name | |
-| Developer | |
-| Start date | |
-| End date | |
+| Project name | RAG-11 |
+| Developer | drdong654 |
+| Start date | 24.05.2026 |
+| End date | 24.07.2026 |
 
 ## Scope
 
 *What is this project? What are you NOT building (to keep it realistic)?*
 
 **In scope:**
--
+
+- Telegram and Discord bot integration
+- RAG-based question answering
+- Hybrid Search (semantic + keyword search)
+- Knowledge base document indexing
+- LLM-generated responses
+- MCP integration for external tools
+- Source-based answers
+- Docker deployment
 
 **Out of scope:**
 -
