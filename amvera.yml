@@ -9,6 +9,6 @@ build:
   useCache: true
 run:
   persistenceMount: /data
-  scriptName: __main__.py
+  scriptName: main.py
   containerPort: 80
   servicePort: 80

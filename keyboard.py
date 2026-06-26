@@ -4,7 +4,7 @@ from aiogram.types import (
     KeyboardButton,
     ReplyKeyboardMarkup,
 )
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
 
 main_keyboard = ReplyKeyboardMarkup(
 keyboard=[
