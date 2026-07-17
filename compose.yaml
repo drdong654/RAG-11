@@ -11,3 +11,9 @@ services:
 
     env_file:
       - .env
+
+    volumes:
+      - bot_data:/data
+
+volumes:
+  bot_data:
