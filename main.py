@@ -5,11 +5,11 @@ from aiogram import Bot, Dispatcher, F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 from aiogram.types import FSInputFile
 from dotenv import load_dotenv
 
-from keyboard import main_keyboard, command_keyboard, courses_keyboard
+from keyboard import main_keyboard, command_keyboard, contact_keyboard, courses_keyboard
 from services import UserStorage, RegistrationService
 
 load_dotenv()
@@ -42,7 +42,6 @@ async def show_lesson_signup(message: Message):
 class RegisterState(StatesGroup):
     waiting_for_phone = State()
     waiting_for_email = State()
-    waiting_for_password = State()
 
 
 async def show_start(message: Message):
@@ -124,7 +123,8 @@ async def show_login(message: Message, state: FSMContext):
     await state.set_state(RegisterState.waiting_for_phone)
     await message.answer_photo(
         photo=photo,
-        caption="Enter your phone number:",
+        caption="Share your phone number using the button below:",
+        reply_markup=contact_keyboard,
     )
 
 
@@ -168,42 +168,43 @@ async def python_course(callback: CallbackQuery):
 #Добавляем обработчик для получения номера телефона и перехода к следующему шагу регистрации
 @router.message(RegisterState.waiting_for_phone)
 async def get_phone(message: Message, state: FSMContext):
-    phone = message.text.strip()
+    ### Accept only Telegram contact sharing from the same account.
+    if not message.contact or message.contact.user_id != message.from_user.id:
+        await message.answer("Please use the button to share your own phone number.")
+        return
+
+    phone = message.contact.phone_number.strip()
     error = registration_service.validate_phone(phone)
     if error:
         await message.answer(error)
         return
     await state.update_data(phone_number=phone)
     await state.set_state(RegisterState.waiting_for_email)
-    await message.answer("Now enter your email:")
+    await message.answer("Now enter your email:", reply_markup=ReplyKeyboardRemove())
 
 
 @router.message(RegisterState.waiting_for_email)
 async def get_email(message: Message, state: FSMContext):
+    ### Email must be typed as text because it will be used for future mailings.
+    if not message.text:
+        await message.answer("Please enter your email as text.")
+        return
+
     email = message.text.strip()
     error = registration_service.validate_email(email)
     if error:
         await message.answer(error)
         return
-    await state.update_data(email=email)
-    await state.set_state(RegisterState.waiting_for_password)
-    await message.answer("Now enter your password:")
-
-
-@router.message(RegisterState.waiting_for_password)
-async def get_password(message: Message, state: FSMContext):
-    password = message.text.strip()
-    error = registration_service.validate_password(password)
-    if error:
-        await message.answer(error)
-        return
 
     data = await state.get_data()
+    user = message.from_user
     result = registration_service.register(
-        user_id=message.from_user.id,
+        user_id=user.id,
         phone=data["phone_number"],
-        email=data["email"],
-        password=password,
+        email=email,
+        username=user.username,
+        first_name=user.first_name,
+        last_name=user.last_name,
     )
 
     await message.answer(result, reply_markup=command_keyboard if "completed" in result else None)

@@ -1,47 +1,7 @@
-# Git
 .git
-.gitignore
-.github
-
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-
-# Virtual environments
-.venv/
-venv/
-env/
-
-# IDE
-.vscode/
-.idea/
-
-# Environment
 .env
-
-# Local databases
-users.db
+.venv
+__pycache__
+*.pyc
+data
 BD.json
-
-# Logs
-*.log
-
-# Python cache
-.pytest_cache/
-.mypy_cache/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Build
-dist/
-build/
-
-# Documentation (если не нужна внутри контейнера)
-docs/
-
-# Docker
-docker-compose.override.yml
