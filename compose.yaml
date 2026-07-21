@@ -12,6 +12,9 @@ services:
     env_file:
       - .env
 
+    environment:
+      DB_FILE: /data/users.db
+
     volumes:
       - bot_data:/data
 

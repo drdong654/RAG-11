@@ -1,14 +1,16 @@
 import hashlib
+import os
 import sqlite3
 from pathlib import Path
 from typing import Optional
 
 class UserStorage:
-    def __init__(self, db_file: Path = Path("/data/users.db")):
-        self.db_file = db_file
+    def __init__(self, db_file: Path | None = None):
+        self.db_file = db_file or Path(os.getenv("DB_FILE", "data/users.db"))
         self._init_schema()
 
     def _init_schema(self) -> None:
+        self.db_file.parent.mkdir(parents=True, exist_ok=True)
         with sqlite3.connect(self.db_file) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS users (

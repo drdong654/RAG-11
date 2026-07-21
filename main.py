@@ -15,6 +15,8 @@ from services import UserStorage, RegistrationService
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
+if not TOKEN:
+    raise RuntimeError("TOKEN is not set. Add TOKEN to .env or environment variables.")
 
 user_storage = UserStorage()
 registration_service = RegistrationService(user_storage)
