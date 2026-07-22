@@ -20,7 +20,7 @@
 - `pyproject.toml` declares `requires-python = ">=3.11"` and lists `aiogram` + `python-dotenv` as dependencies.
 - `uv.lock` exists (uv-compatible), but no `[build-system]` or `[tool.uv]` section in `pyproject.toml`.
 - `amvera.yml` targets Python 3.11 with pip and expects `__main__.py` as entrypoint. The actual entrypoint is `main.py`. Treat `amvera.yml` as stale until deployment is updated.
-- `Dockerfile` uses `python:3.13-slim` and installs from `requirements.txt`. The Dockerfile and `pyproject.toml` Python version requirements are out of sync.
+- `Dockerfile` uses `python:3.13-slim` and installs from `pyproject.toml`.
 
 ## Verification limits
 
