@@ -1,0 +1,11 @@
+services:
+  bot:
+    build: .
+    container_name: vildly-rag-bot
+    env_file:
+      - .env
+    environment:
+      DB_FILE: /app/data/users.db
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

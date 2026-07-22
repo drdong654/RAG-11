@@ -15,6 +15,10 @@ Welcome. This folder holds the living documentation of your project. Edit each f
 
 - [Post-Mortem](post-mortem.md)
 
+## Learning
+
+- [Exercise: Docker Fundamentals + Persistent Storage with SQLite](exercise-docker-sqlite.md) — hands-on walkthrough of this repo's own Dockerfile/compose.yaml, then migrating user storage from JSON to a volume-backed SQLite file
+
 ---
 
 ## Tips for editing
