@@ -1,13 +1,10 @@
 .git
 .env
-.env.local
-.env.*.local
 .venv
-venv
 __pycache__
 *.pyc
 data
-BD.json
+data/*
 .pytest_cache
 .mypy_cache
 *.log

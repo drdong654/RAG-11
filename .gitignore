@@ -1,31 +1,59 @@
-# Environment
-.env
-.env.local
-.env.*.local
-
-# Dependencies
-node_modules/
+# =========================
+# Python
+# =========================
 __pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual Environment
 .venv/
 venv/
+env/
 
-# Build artefacts
-dist/
-build/
-out/
-*.log
+# =========================
+# Environment
+# =========================
+.env
 
-# IDE
-.idea/
-.vscode/
-*.swp
-.DS_Store
-
-# Coverage and test output
-coverage/
-*.coverage
-.pytest_cache/
-
+# =========================
+# Database
+# =========================
+users.db
+data/
 BD.json
 data/
 
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# Pytest / Type Checking
+# =========================
+.pytest_cache/
+.mypy_cache/
+
+# =========================
+# Build
+# =========================
+build/
+dist/
+
+# =========================
+# Docker
+# =========================
+docker-compose.override.yml
