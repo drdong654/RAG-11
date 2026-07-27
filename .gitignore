@@ -27,4 +27,5 @@ coverage/
 .pytest_cache/
 
 BD.json
+data/
 

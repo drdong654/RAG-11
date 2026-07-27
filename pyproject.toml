@@ -6,5 +6,8 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "aiogram>=3.29.0",
+    "aiosqlite>=0.22.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
     "python-dotenv>=1.0.0",
 ]
