@@ -1,57 +1,32 @@
 import asyncio
-import hashlib
-import json
 import os
-from pathlib import Path
 
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 from aiogram.types import FSInputFile
 from dotenv import load_dotenv
 
-from keyboard import main_keyboard, command_keyboard, courses_keyboard
-
-
+from bot.keyboard import main_keyboard, command_keyboard, contact_keyboard, courses_keyboard
+from services import UserStorage, RegistrationService
 
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
-DB_FILE = Path("BD.json")
+if not TOKEN:
+    raise RuntimeError("TOKEN is not set. Add TOKEN to .env or environment variables.")
+
+user_storage = UserStorage()
+registration_service = RegistrationService(user_storage)
 
 router = Router()
-
-
-def load_users():
-    if not DB_FILE.exists():
-        return {"users": []}
-
-    with open(DB_FILE, "r", encoding="utf-8") as file:
-        try:
-            return json.load(file)
-        except json.JSONDecodeError:
-            return {"users": []}
-
-
-def save_users(data):
-    with open(DB_FILE, "w", encoding="utf-8") as file:
-        json.dump(data, file, ensure_ascii=False, indent=4)
-
-
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
-
-
-def is_registered(user_id: int) -> bool:
-    users_data = load_users()
-    return any(user["user_id"] == user_id for user in users_data["users"])
 
 async def show_lesson_signup(message: Message):
     user_id = message.from_user.id
 
-    if not is_registered(user_id):
+    if not user_storage.is_registered(user_id):
         await message.answer(
             "You must complete registration first.\n\n"
             "Use /login to continue."
@@ -67,12 +42,11 @@ async def show_lesson_signup(message: Message):
 class RegisterState(StatesGroup):
     waiting_for_phone = State()
     waiting_for_email = State()
-    waiting_for_password = State()
 
 
 async def show_start(message: Message):
     photo = FSInputFile("image/start_img.png")
-    reply_markup = command_keyboard if is_registered(message.from_user.id) else main_keyboard
+    reply_markup = command_keyboard if user_storage.is_registered(message.from_user.id) else main_keyboard
 
     await message.answer_photo(
         photo=photo,
@@ -101,7 +75,7 @@ async def show_help(message: Message):
 
 async def show_profile(message: Message):
     user_id = message.from_user.id
-    if is_registered(user_id):
+    if user_storage.is_registered(user_id):
         await message.answer("Welcome, home!", reply_markup=command_keyboard)
     else:
         await message.answer("Please, log in!", reply_markup=main_keyboard)
@@ -141,7 +115,7 @@ async def profile_button_text(message: Message):
 
 #Добавляем команду login и кнопку Login
 async def show_login(message: Message, state: FSMContext):
-    if is_registered(message.from_user.id):
+    if user_storage.is_registered(message.from_user.id):
         await message.answer("You are already registered.", reply_markup=command_keyboard)
         return
 
@@ -149,7 +123,8 @@ async def show_login(message: Message, state: FSMContext):
     await state.set_state(RegisterState.waiting_for_phone)
     await message.answer_photo(
         photo=photo,
-        caption="Enter your phone number:",
+        caption="Share your phone number using the button below:",
+        reply_markup=contact_keyboard,
     )
 
 
@@ -193,62 +168,46 @@ async def python_course(callback: CallbackQuery):
 #Добавляем обработчик для получения номера телефона и перехода к следующему шагу регистрации
 @router.message(RegisterState.waiting_for_phone)
 async def get_phone(message: Message, state: FSMContext):
-    phone = message.text.strip()
-
-    if len(phone) < 7 or not phone.replace("+", "").isdigit():
-        await message.answer("Enter a valid phone number.")
+    ### Accept only Telegram contact sharing from the same account.
+    if not message.contact or message.contact.user_id != message.from_user.id:
+        await message.answer("Please use the button to share your own phone number.")
         return
 
+    phone = message.contact.phone_number.strip()
+    error = registration_service.validate_phone(phone)
+    if error:
+        await message.answer(error)
+        return
     await state.update_data(phone_number=phone)
     await state.set_state(RegisterState.waiting_for_email)
-    await message.answer("Now enter your email:")
+    await message.answer("Now enter your email:", reply_markup=ReplyKeyboardRemove())
 
-# Добавляем обработчик для получения email и перехода к следующему шагу регистрации
+
 @router.message(RegisterState.waiting_for_email)
 async def get_email(message: Message, state: FSMContext):
-    email = message.text.strip()
-
-    if "@" not in email:
-        await message.answer("Enter a valid email.")
+    ### Email must be typed as text because it will be used for future mailings.
+    if not message.text:
+        await message.answer("Please enter your email as text.")
         return
 
-    await state.update_data(email=email)
-    await state.set_state(RegisterState.waiting_for_password)
-    await message.answer("Now enter your password:")
-
-# Добавляем обработчик для получения пароля и завершения регистрации
-@router.message(RegisterState.waiting_for_password)
-async def get_password(message: Message, state: FSMContext):
-    password = message.text.strip()
-
-    if not password:
-        await message.answer("Password cannot be empty.")
+    email = message.text.strip()
+    error = registration_service.validate_email(email)
+    if error:
+        await message.answer(error)
         return
 
     data = await state.get_data()
-    phone_number = data.get("phone_number")
-    email = data.get("email")
-    password_hash = hash_password(password)
-
-    users_data = load_users()
-
-    if any(user["user_id"] == message.from_user.id for user in users_data["users"]):
-        await message.answer("You are already registered.")
-        await state.clear()
-        return
-
-    users_data["users"].append(
-        {
-            "user_id": message.from_user.id,
-            "phone_number": phone_number,
-            "email": email,
-            "password_hash": password_hash,
-        }
+    user = message.from_user
+    result = registration_service.register(
+        user_id=user.id,
+        phone=data["phone_number"],
+        email=email,
+        username=user.username,
+        first_name=user.first_name,
+        last_name=user.last_name,
     )
 
-    save_users(users_data)
-
-    await message.answer("Registration completed!", reply_markup=command_keyboard)
+    await message.answer(result, reply_markup=command_keyboard if "completed" in result else None)
     await state.clear()
 
 

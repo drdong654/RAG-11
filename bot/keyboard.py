@@ -24,6 +24,17 @@ command_keyboard = ReplyKeyboardMarkup(
     ],
     resize_keyboard=True
 )
+
+### Contact sharing lets Telegram prove that the phone belongs to the current user.
+contact_keyboard = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="Share phone number", request_contact=True)],
+    ],
+    resize_keyboard=True,
+    one_time_keyboard=True,
+)
+
+
 def courses_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
