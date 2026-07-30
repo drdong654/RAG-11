@@ -1,11 +1,14 @@
 import pytest
+from pathlib import Path
 
 from services import RegistrationService, UserStorage
 
+
+
 @pytest.fixture
 def user_storage(tmp_path):
-    db_file = tmp_path / "users.db"
-    return UserStorage(db_file)
+    db = tmp_path / "users.db"
+    return UserStorage(db)
 
 @pytest.fixture
 def registration_service(user_storage):

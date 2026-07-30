@@ -1,4 +1,4 @@
-from data.services import RegistrationService
+from services import RegistrationService
 from tests.conftest import user_storage
 
 def test_register_user(user_storage):
