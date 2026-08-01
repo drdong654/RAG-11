@@ -12,4 +12,3 @@ run:
   command: null
   args: null
   containerPort: 80
-
