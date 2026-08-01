@@ -9,10 +9,6 @@ from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 from aiogram.types import FSInputFile
 from dotenv import load_dotenv
 
-<<<<<<< HEAD
-=======
-
->>>>>>> f223f89 (Resolve conflicts)
 from bot.keyboard import main_keyboard, command_keyboard, contact_keyboard, courses_keyboard
 from services import UserStorage, RegistrationService
 

@@ -1,42 +1,44 @@
 from services import RegistrationService
-from tests.conftest import user_storage
+
 
 def test_register_user(user_storage):
+    
     service = RegistrationService(user_storage)
     result = service.register(
-        user_id="user123",
+        user_id=1,
         phone ="+1234567890",
         email="testuser@example.com"
     )
 
     assert result == "Registration completed! Welcome aboard."
-    assert user_storage.is_registered("user123")
+    assert user_storage.is_registered(1) 
 
-def test_duplicate_registration(users):
-    service = RegistrationService(users_storage=users)
+def test_duplicate_registration(user_storage):
+    service = RegistrationService(user_storage)
+    
     service.register(
-        user_id="user123",
+        user_id=1,
         phone = "+1234567890",
-        email="")
+        email="testuser@example.com")
     result = service.register(
-        user_id="user123", 
+        user_id=1, 
         phone ="+1234567890",
         email="testuser@example.com"
     )
 
-    assert result == "User already registered."
+    assert result == "You are already registered."
 
 def test_duplicate_email(user_storage):
-    service = RegistrationService(users_storage=users)
+    service = RegistrationService(user_storage)
     service.register(
-        user_id="user123",
+        user_id=1,
         phone ="+1234567890",
         email="testuser@example.com"
     )
     result = service.register(
-        user_id="user456",
+        user_id=2,
         phone ="+0987654321",
         email="testuser@example.com"
     )
 
-    assert result == "Email already registered."
+    assert result == "This email is already registered."
