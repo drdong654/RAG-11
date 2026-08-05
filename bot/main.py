@@ -8,6 +8,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 from aiogram.types import FSInputFile
 from dotenv import load_dotenv
+
 from bot.keyboard import main_keyboard, command_keyboard, contact_keyboard, courses_keyboard
 from services import UserStorage, RegistrationService
 
@@ -74,7 +75,6 @@ async def show_help(message: Message):
 
 async def show_profile(message: Message):
     user_id = message.from_user.id
-
     if user_storage.is_registered(user_id):
         await message.answer("Welcome, home!", reply_markup=command_keyboard)
     else:
