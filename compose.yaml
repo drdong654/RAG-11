@@ -1,11 +1,22 @@
 services:
   bot:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: vildly-rag-bot:latest
     container_name: vildly-rag-bot
+
+    restart: unless-stopped
+
     env_file:
       - .env
+
     environment:
       DB_FILE: /app/data/users.db
+
     volumes:
-      - ./data:/app/data
-    restart: unless-stopped
+      - vildly_data:/app/data
+
+volumes:
+  vildly_data:
