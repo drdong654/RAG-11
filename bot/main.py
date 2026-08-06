@@ -121,12 +121,25 @@ async def show_login(message: Message, state: FSMContext):
 
     photo = FSInputFile("image/login_img.png")
     await state.set_state(RegisterState.waiting_for_phone)
+
+    await message.answer(
+        "📝 **Registration**\n\n"
+        "We'll collect a few details to create your account "
+        "and personalize your experience at Vildly Academy.\n\n"
+    )
+    
     await message.answer_photo(
         photo=photo,
-        caption="Share your phone number using the button below:",
+        caption="📱 Share your phone number using the button below:",
         reply_markup=contact_keyboard,
     )
 
+@router.message(Command("back"))
+async def back_command(message: Message):
+    await message.answer("Main menu", reply_markup=main_keyboard)
+@router.message(F.text == "Back")
+async def back_button_text(message: Message):
+    await message.answer("Main menu", reply_markup=main_keyboard)
 
 @router.message(Command("login"))
 async def login_command(message: Message, state: FSMContext):
