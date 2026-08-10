@@ -25,4 +25,22 @@ jobs:
       - name: Run tests
         run: uv run pytest
 
-                
+deploy:
+  needs: test
+  if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  runs-on: ubuntu-latest
+
+  steps:
+    - uses: actions/checkout@v4
+    - name: Add SSH key
+      run:
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan ${{ secrets.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Deploy
+    env:
+      DOCKER_HOST: ssh://ubuntu@${{ secrets.PRODUCTION_HOST }}
+      run: docker compose -f compose.prod.yml up build -d
+      
