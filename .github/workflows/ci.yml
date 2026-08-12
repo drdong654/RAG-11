@@ -1,3 +1,5 @@
+### CI ###
+
 name: CI
 on:
   push:
@@ -27,3 +29,17 @@ jobs:
         
       - name: Run tests
         run: uv run python -m pytest
+
+### CD ###
+
+  deploy:
+
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps: 
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t myapp:latest .
