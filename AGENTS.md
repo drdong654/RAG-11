@@ -1,30 +1,36 @@
-# RAG-11
+# RAG-11 Agent Notes
 
-## What matters
+## Current Shape
 
-- This repo is a small aiogram 3 Telegram bot, not a full RAG app yet. `issues(2).md` is a roadmap, not implemented architecture.
-- Three live app files: `main.py` (entrypoint), `keyboard.py` (reply/inline keyboards), `services.py` (user storage + registration logic against `BD.json`).
-- `main.py` is the entrypoint: `load_dotenv()` -> reads `TOKEN` from env -> `asyncio.run(main())` -> aiogram polling.
-- Handler registration uses a module-level `Router` included into the `Dispatcher` at startup. If you refactor imports or split files, preserve import-time handler registration.
-- `BD.json` is the user database (gitignored). `UserStorage` reads/writes it; passwords are SHA-256 hashed.
+- This is currently an aiogram 3 Telegram bot, not the full RAG/Discord/Postgres system described in the roadmap docs.
+- Real app entrypoint is `bot/main.py`; Docker runs `uv run --no-sync python -m bot.main`.
+- Handler registration is module-level on `router`, then `main()` creates `Dispatcher()` and calls `dp.include_router(router)` before polling.
+- `services.py` owns registration logic and SQLite user storage; `bot/main.py` imports it from the repo root, so run commands from the repo root.
+- `AI/` is only a stub (`RAG.py`, empty `ASK.py`) and is not wired into the bot.
 
 ## Commands
 
-- Run locally: `python main.py`
-- Quick syntax check: `python -m py_compile main.py keyboard.py services.py`
-- Build Docker image: `docker compose build`
-- Run in Docker: `docker compose up` (reads `.env` for `TOKEN`)
+- Install/sync deps from the lockfile: `uv sync --frozen`.
+- Run tests with the local venv on Windows: `.venv\Scripts\python.exe -m pytest`.
+- Run a single test file: `.venv\Scripts\python.exe -m pytest tests/test_registration.py`.
+- Quick syntax check: `.venv\Scripts\python.exe -m py_compile bot/main.py bot/keyboard.py services.py`.
+- Run bot locally after setting `TOKEN`: `.venv\Scripts\python.exe -m bot.main`.
+- Build/run Docker: `docker compose build` and `docker compose up`.
 
-## Dependency and config drift
+## Local Environment Gotchas
 
-- `pyproject.toml` declares `requires-python = ">=3.11"` and lists `aiogram` + `python-dotenv` as dependencies.
-- `uv.lock` exists (uv-compatible), but no `[build-system]` or `[tool.uv]` section in `pyproject.toml`.
-- `amvera.yml` targets Python 3.11 with pip and expects `__main__.py` as entrypoint. The actual entrypoint is `main.py`. Treat `amvera.yml` as stale until deployment is updated.
-- `Dockerfile` uses `python:3.13-slim` and installs from `pyproject.toml`.
+- In this workspace path (`D:\it\Vildly bot`), `uv run pytest` failed with `uv trampoline failed to canonicalize script path`; prefer `.venv\Scripts\python.exe -m pytest` unless the path issue is fixed.
+- `py` on this machine resolved to Python 3.14 without pytest; the checked local venv used Python 3.13 and passed the tests.
+- Running the bot requires `TOKEN` in `.env` or the process environment; `bot/main.py` raises immediately if it is missing.
+- User data defaults to `data/users.db`; Docker overrides `DB_FILE=/app/data/users.db` and persists it through the `vildly_data` named volume.
+- `image/start_img.png`, `image/help_img.png`, and `image/login_img.png` are loaded by relative paths from the repo root and will fail at runtime if missing or if the bot is launched from another cwd.
 
-## Verification limits
+## Testing Notes
 
-- No test suite, linter config, typecheck config, or CI workflow exists.
-- `py_compile` is the only fast static check available.
-- Running the bot requires a valid Telegram `TOKEN` in `.env` or the process environment.
-- `image/` directory contains PNG assets referenced by `main.py` via relative paths; missing images will crash the bot at runtime.
+- The current test suite only covers `RegistrationService`/`UserStorage`; tests use a pytest `tmp_path` SQLite DB and do not need `TOKEN`.
+- No linter, formatter, typecheck config, CI workflow, or pre-commit config exists in this repo.
+
+## Deployment Notes
+
+- `pyproject.toml` requires Python `>=3.11`, while the Docker image is `python:3.13-slim`.
+- `amvera.yml` delegates to `Dockerfile`; do not infer a separate Python entrypoint from it.

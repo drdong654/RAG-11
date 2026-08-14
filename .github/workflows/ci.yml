@@ -1,0 +1,45 @@
+### CI ###
+
+name: CI
+on:
+  push:
+    branches: [ main, Week7 ]
+  pull_request:
+    branches: [ main, Week7 ]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13
+      - name: Install uv
+        run: |
+          pip install uv
+          
+      - name: Install dependencies
+        run: uv sync
+        
+      - name: Run tests
+        run: uv run python -m pytest
+
+### CD ###
+
+  deploy:
+
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps: 
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t myapp:latest .
