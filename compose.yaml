@@ -1,11 +1,28 @@
 services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: always
+    environment:
+      POSTGRES_USER: bot
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: bot
+    volumes:
+      - ./.pgdata:/var/lib/postgresql/data
+
+  api:
+    build: .
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+    environment:
+      DATABASE_URL: postgresql+asyncpg://bot:${DB_PASSWORD}@db:5432/bot
+    depends_on: [db]
+    ports:
+      - "8000:8000"
+
   bot:
     build: .
-    container_name: vildly-rag-bot
-    env_file:
-      - .env
+    restart: always
+    command: python -m bot
     environment:
-      DB_FILE: /app/data/users.db
-    volumes:
-      - ./data:/app/data
-    restart: unless-stopped
+      BOT_TOKEN: ${BOT_TOKEN}
+      DATABASE_URL: postgresql+asyncpg://bot:${DB_PASSWORD}@db:5432/bot
+    depends_on: [db]
