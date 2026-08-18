@@ -7,14 +7,14 @@ import os
 from sqladmin import Admin
 from api.admin import UserAdmin
 
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 engine, Session = make_sessionmaker(DATABASE_URL)
 app = FastAPI(title="vildly-rag-bot API")
 
 
 admin = Admin(app, engine)
 admin.add_view(UserAdmin)
-
-DATABASE_URL = os.getenv("DATABASE_URL")
 
 async def get_users():
     async with Session() as session:

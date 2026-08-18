@@ -1,4 +1,3 @@
-# bot/db/repositories/users.py
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from bot.db.models import User
@@ -7,13 +6,22 @@ class UserRepository:
     def __init__(self, session):
         self._session = session
 
-    async def upsert(self, telegram_id, username, first_name):
+    async def upsert(self, telegram_id, username, first_name, last_name=None):
         stmt = (
             insert(User)
-            .values(telegram_id=telegram_id, username=username, first_name=first_name)
+            .values(
+                telegram_id=telegram_id,
+                username=username,
+                first_name=first_name,
+                last_name=last_name,
+            )
             .on_conflict_do_update(
                 index_elements=["telegram_id"],
-                set_={"username": username, "first_name": first_name, "last_name": None, "phoene_number": None, "email": None},
+                set_={
+                    "username": username,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                },
             )
             .returning(User)
         )
@@ -26,3 +34,45 @@ class UserRepository:
 
     async def list_all(self):
         return list((await self._session.execute(select(User))).scalars())
+
+    async def is_registered(self, telegram_id):
+        user = await self.get_by_telegram_id(telegram_id)
+        return user is not None and user.phone_number is not None and user.email is not None
+
+    async def email_exists(self, email):
+        result = await self._session.execute(select(User).where(User.email == email))
+        return result.scalar_one_or_none() is not None
+
+    async def add_user_details(self, telegram_id, phone_number, email):
+        user = await self.get_by_telegram_id(telegram_id)
+        if user:
+            user.phone_number = phone_number
+            user.email = email
+            await self._session.commit()
+            return user
+        return None
+
+    async def add_user(self, user_data):
+        stmt = (
+            insert(User)
+            .values(
+                telegram_id=user_data["user_id"],
+                username=user_data.get("username"),
+                first_name=user_data.get("first_name"),
+                last_name=user_data.get("last_name"),
+                phone_number=user_data.get("phone_number"),
+                email=user_data.get("email"),
+            )
+            .on_conflict_do_update(
+                index_elements=["telegram_id"],
+                set_={
+                    "username": user_data.get("username"),
+                    "first_name": user_data.get("first_name"),
+                    "last_name": user_data.get("last_name"),
+                    "phone_number": user_data.get("phone_number"),
+                    "email": user_data.get("email"),
+                },
+            )
+        )
+        await self._session.execute(stmt)
+        await self._session.commit()

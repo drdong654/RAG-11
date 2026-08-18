@@ -9,6 +9,7 @@ from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 from aiogram.types import FSInputFile
 from dotenv import load_dotenv
 
+from bot.db.engine import make_sessionmaker
 from bot.keyboard import main_keyboard, command_keyboard, contact_keyboard, courses_keyboard
 from services import UserStorage, RegistrationService
 
@@ -18,7 +19,12 @@ TOKEN = os.getenv("TOKEN")
 if not TOKEN:
     raise RuntimeError("TOKEN is not set. Add TOKEN to .env or environment variables.")
 
-user_storage = UserStorage()
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not set. Add DATABASE_URL to .env or environment variables.")
+
+_, Session = make_sessionmaker(DATABASE_URL)
+user_storage = UserStorage(Session)
 registration_service = RegistrationService(user_storage)
 
 
@@ -27,7 +33,7 @@ router = Router()
 async def show_lesson_signup(message: Message):
     user_id = message.from_user.id
 
-    if not user_storage.is_registered(user_id):
+    if not await user_storage.is_registered(user_id):
         await message.answer(
             "You must complete registration first.\n\n"
             "Use /login to continue."
@@ -47,7 +53,7 @@ class RegisterState(StatesGroup):
 
 async def show_start(message: Message):
     photo = FSInputFile("image/start_img.png")
-    reply_markup = command_keyboard if user_storage.is_registered(message.from_user.id) else main_keyboard
+    reply_markup = command_keyboard if await user_storage.is_registered(message.from_user.id) else main_keyboard
 
 
     await message.answer_photo(
@@ -77,7 +83,7 @@ async def show_help(message: Message):
 
 async def show_profile(message: Message):
     user_id = message.from_user.id
-    if user_storage.is_registered(user_id):
+    if await user_storage.is_registered(user_id):
 
         await message.answer("Welcome, home!", reply_markup=command_keyboard)
     else:
@@ -118,7 +124,7 @@ async def profile_button_text(message: Message):
 
 #Добавляем команду login и кнопку Login
 async def show_login(message: Message, state: FSMContext):
-    if user_storage.is_registered(message.from_user.id):
+    if await user_storage.is_registered(message.from_user.id):
 
         await message.answer("You are already registered.", reply_markup=command_keyboard)
         return
@@ -202,7 +208,7 @@ async def get_email(message: Message, state: FSMContext):
 
     data = await state.get_data()
     user = message.from_user
-    result = registration_service.register(
+    result = await registration_service.register(
         user_id=user.id,
         phone=data["phone_number"],
         email=email,

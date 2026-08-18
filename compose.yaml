@@ -23,6 +23,6 @@ services:
     restart: always
     command: python -m bot
     environment:
-      BOT_TOKEN: ${BOT_TOKEN}
+      TOKEN: ${TOKEN}
       DATABASE_URL: postgresql+asyncpg://bot:${DB_PASSWORD}@db:5432/bot
     depends_on: [db]
