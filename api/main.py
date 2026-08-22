@@ -1,7 +1,7 @@
 # api/main.py
 from fastapi import FastAPI, Depends, HTTPException
 from bot.db.engine import make_sessionmaker
-from bot.db.users import UserRepository
+from bot.db.repositories.users import UserRepository
 import os
 
 from sqladmin import Admin

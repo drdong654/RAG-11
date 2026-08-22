@@ -13,6 +13,7 @@ from bot.db.engine import make_sessionmaker
 from bot.keyboard import main_keyboard, command_keyboard, contact_keyboard, courses_keyboard
 from services import UserStorage, RegistrationService
 
+
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")

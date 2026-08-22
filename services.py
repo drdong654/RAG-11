@@ -2,7 +2,7 @@ from typing import Optional
 
 from sqlalchemy.exc import IntegrityError
 
-from bot.db.users import UserRepository
+from bot.db.repositories.users import UserRepository
 
 
 class UserStorage:
