@@ -7,3 +7,6 @@ def make_sessionmaker(dsn: str):
         engine,
         expire_on_commit=False
     )
+
+def create_engine(dsn: str):
+    return create_async_engine(dsn)

@@ -13,7 +13,7 @@ services:
     build: .
     command: uv run --no-sync uvicorn api.main:app --host 0.0.0.0 --port 8000
     environment:
-      DATABASE_URL: postgresql+asyncpg://bot:${DB_PASSWORD}@db:5432/bot
+      DATABASE_URL: ${DATABASE_URL}
     depends_on: [db]
     ports:
       - "8000:8000"
@@ -24,5 +24,5 @@ services:
     command: uv run --no-sync python -m bot.main
     environment:
       TOKEN: ${TOKEN}
-      DATABASE_URL: postgresql+asyncpg://bot:${DB_PASSWORD}@db:5432/bot
+      DATABASE_URL: ${DATABASE_URL}
     depends_on: [db]

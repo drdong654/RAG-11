@@ -14,5 +14,3 @@ class User(Base):
     phone_number: Mapped[str | None]
     email: Mapped[str | None]
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-
-
