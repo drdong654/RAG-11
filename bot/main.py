@@ -9,7 +9,7 @@ from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 from aiogram.types import FSInputFile
 from dotenv import load_dotenv
 
-from bot.db.engine import make_sessionmaker
+from bot.db.engine import make_sessionmaker, init_models
 from bot.keyboard import main_keyboard, command_keyboard, contact_keyboard, courses_keyboard
 from services import UserStorage, RegistrationService
 
@@ -24,7 +24,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is not set. Add DATABASE_URL to .env or environment variables.")
 
-_, Session = make_sessionmaker(DATABASE_URL)
+engine, Session = make_sessionmaker(DATABASE_URL)
 user_storage = UserStorage(Session)
 registration_service = RegistrationService(user_storage)
 
@@ -248,6 +248,7 @@ async def back_button(message: Message):
 
 
 async def main():
+    await init_models(engine)
     bot = Bot(token=TOKEN)
     dp = Dispatcher()
     dp.include_router(router)

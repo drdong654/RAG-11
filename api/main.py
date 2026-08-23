@@ -1,8 +1,10 @@
 # api/main.py
-from fastapi import FastAPI, Depends, HTTPException
-from bot.db.engine import make_sessionmaker
-from bot.db.repositories.users import UserRepository
+from contextlib import asynccontextmanager
 import os
+
+from fastapi import FastAPI, Depends, HTTPException
+from bot.db.engine import make_sessionmaker, init_models
+from bot.db.repositories.users import UserRepository
 
 from sqladmin import Admin
 from api.admin import UserAdmin
@@ -10,7 +12,15 @@ from api.admin import UserAdmin
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine, Session = make_sessionmaker(DATABASE_URL)
-app = FastAPI(title="vildly-rag-bot API")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_models(engine)
+    yield
+
+
+app = FastAPI(title="vildly-rag-bot API", lifespan=lifespan)
 
 
 admin = Admin(app, engine)
