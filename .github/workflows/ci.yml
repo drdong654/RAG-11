@@ -3,9 +3,9 @@
 name: CI
 on:
   push:
-    branches: [ main, Week7 ]
+    branches: [ main, ]
   pull_request:
-    branches: [ main, Week7 ]
+    branches: [ main, ]
 
 jobs:
   test:

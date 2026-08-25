@@ -4,8 +4,10 @@ services:
     restart: always
     environment:
       POSTGRES_USER: bot
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: 123
       POSTGRES_DB: bot
+    ports:
+      - "5432:5432"
     volumes:
       - ./.pgdata:/var/lib/postgresql/data
 
@@ -13,7 +15,7 @@ services:
     build: .
     command: uv run --no-sync uvicorn api.main:app --host 0.0.0.0 --port 8000
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: postgresql+asyncpg://bot:123@db:5432/bot
     depends_on: [db]
     ports:
       - "8000:8000"
@@ -24,5 +26,5 @@ services:
     command: uv run --no-sync python -m bot.main
     environment:
       TOKEN: ${TOKEN}
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: postgresql+asyncpg://bot:123@db:5432/bot
     depends_on: [db]
