@@ -1,3 +1,5 @@
+#bot.main.py
+
 import asyncio
 import os
 
@@ -123,6 +125,7 @@ async def profile_button_text(message: Message):
     await show_profile(message)
 
 
+
 #Добавляем команду login и кнопку Login
 async def show_login(message: Message, state: FSMContext):
     if await user_storage.is_registered(message.from_user.id):
@@ -132,11 +135,21 @@ async def show_login(message: Message, state: FSMContext):
 
     photo = FSInputFile("image/login_img.png")
     await state.set_state(RegisterState.waiting_for_phone)
+    await message.answer(
+        "Personal Data Consent\n"
+        "\n"
+        "By sending your contact information, you consent to the collection, storage, and processing of your personal data for the purpose of providing our services.\n"
+        "By proceeding, you confirm that you have read and accepted our Privacy Policy."
+    )
     await message.answer_photo(
         photo=photo,
-        caption="Share your phone number using the button below:",
+        caption="Share your phone number using the button below:", 
         reply_markup=contact_keyboard,
     )
+
+
+
+
 
 
 @router.message(Command("login"))
@@ -243,8 +256,14 @@ async def lesson_signup_button(message: Message):
 
 
 @router.message(F.text == "Back")
-async def back_button(message: Message):
-    await message.answer("Main menu", reply_markup=main_keyboard)
+async def back_button(message: Message, state: FSMContext):
+    await state.clear()
+
+    await message.answer(
+        "Main menu",
+        reply_markup=main_keyboard,
+    )
+    
 
 
 async def main():
