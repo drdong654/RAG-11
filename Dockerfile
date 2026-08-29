@@ -13,8 +13,7 @@ RUN uv sync --frozen --no-install-project
 COPY . .
 RUN uv sync --frozen
 
-RUN useradd --create-home --shell /bin/bash appuser \
-    && chown -R appuser:appuser /app
+RUN useradd --create-home --shell /bin/bash appuser
 
 USER appuser
 

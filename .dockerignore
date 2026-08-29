@@ -3,11 +3,14 @@
 .env.local
 .env.*.local
 .venv
+.venv-linux
 venv
 __pycache__
 *.pyc
 data
 data/*
+.pgdata
+.pgdata/*
 .pytest_cache
 .mypy_cache
 *.log
