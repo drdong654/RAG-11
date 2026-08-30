@@ -3,13 +3,19 @@ from contextlib import asynccontextmanager
 import os
 
 from fastapi import FastAPI, Depends, HTTPException
+from dotenv import load_dotenv
+
 from bot.db.engine import make_sessionmaker, init_models
 from bot.db.repositories.users import UserRepository
 
 from sqladmin import Admin
 from api.admin import UserAdmin
 
+load_dotenv()
+
 DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not set. Add DATABASE_URL to environment variables.")
 
 engine, Session = make_sessionmaker(DATABASE_URL)
 
