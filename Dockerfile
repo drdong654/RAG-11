@@ -12,9 +12,12 @@ RUN uv sync --frozen --no-install-project
 
 COPY . .
 RUN uv sync --frozen
+RUN chmod +x scripts/start.sh
 
 RUN useradd --create-home --shell /bin/bash appuser
 
 USER appuser
 
-CMD ["uv", "run", "python", "-m", "bot.main"]
+EXPOSE 8000
+
+CMD ["scripts/start.sh"]
