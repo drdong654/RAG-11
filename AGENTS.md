@@ -1,36 +1,92 @@
-# RAG-11 Agent Notes
+# Vildly Agent Notes
 
-## Current Shape
+## Current System
 
-- This is currently an aiogram 3 Telegram bot, not the full RAG/Discord/Postgres system described in the roadmap docs.
-- Real app entrypoint is `bot/main.py`; Docker runs `uv run --no-sync python -m bot.main`.
-- Handler registration is module-level on `router`, then `main()` creates `Dispatcher()` and calls `dp.include_router(router)` before polling.
-- `services.py` owns registration logic and SQLite user storage; `bot/main.py` imports it from the repo root, so run commands from the repo root.
-- `AI/` is only a stub (`RAG.py`, empty `ASK.py`) and is not wired into the bot.
+- Runtime consists of an aiogram 3 Telegram bot, FastAPI/SQLAdmin API, and PostgreSQL 16 with pgvector.
+- Bot and API are separate processes sharing SQLAlchemy models, repositories, and one database.
+- RAG, Discord, hybrid search, and MCP are roadmap items. `AI/RAG.py` is incomplete; `AI/ASK.py` is empty.
+- Run commands from repository root: the bot loads images by relative path and imports root-level `services.py`.
+
+## Entry Points
+
+- Bot: `uv run --no-sync python -m bot.main`.
+- API: `uv run --no-sync uvicorn api.main:app --host 0.0.0.0 --port 8000`.
+- Dockerfile default: `scripts/start.sh`, starting API in background and bot in foreground.
+- Compose overrides the image command and runs `db`, `api`, and `bot` separately.
+- Amvera delegates to `Dockerfile`; `amvera.yml` has no separate Python entry point.
+
+## Architecture
+
+- `bot/main.py`: router, handlers, registration FSM, polling startup.
+- `bot/keyboard.py`: Telegram reply and inline keyboards.
+- `services.py`: `RegistrationService` and session-owning `UserStorage`.
+- `bot/db/models.py`: SQLAlchemy models.
+- `bot/db/engine.py`: async engine/session factory and startup table initialization.
+- `bot/db/repositories/users.py`: PostgreSQL-specific user persistence.
+- `api/main.py`: FastAPI app, user endpoints, SQLAdmin registration.
+- `api/admin.py`: SQLAdmin user view.
+- `tests/unit/`: service tests using in-memory storage.
+- `tests/integration/`: PostgreSQL repository tests.
+
+Registration flow: aiogram handler -> `RegistrationService` -> `UserStorage` -> `UserRepository` -> PostgreSQL.
+
+## Environment
+
+- `TOKEN`: required by `bot/main.py` at import time.
+- `DATABASE_URL`: async SQLAlchemy DSN required by bot and API.
+- `TEST_DATABASE_URL`: optional dedicated PostgreSQL database for integration tests.
+- `EMBEDDING`: read only by incomplete `AI/RAG.py`.
+
+Never commit real secrets. Compose credentials are development-only values.
 
 ## Commands
 
-- Install/sync deps from the lockfile: `uv sync --frozen`.
-- Run tests with the local venv on Windows: `.venv\Scripts\python.exe -m pytest`.
-- Run a single test file: `.venv\Scripts\python.exe -m pytest tests/test_registration.py`.
-- Quick syntax check: `.venv\Scripts\python.exe -m py_compile bot/main.py bot/keyboard.py services.py`.
-- Run bot locally after setting `TOKEN`: `.venv\Scripts\python.exe -m bot.main`.
-- Build/run Docker: `docker compose build` and `docker compose up`.
+```bash
+uv sync --frozen
+uv run --no-sync python -m bot.main
+uv run --no-sync uvicorn api.main:app --host 0.0.0.0 --port 8000
+docker compose build
+docker compose up
+.venv-linux/bin/python -m pytest
+.venv-linux/bin/python -m pytest tests/unit/test_registration.py
+.venv-linux/bin/python -m pytest tests/integration/test_user_repository.py
+```
 
-## Local Environment Gotchas
+Windows: `.venv\Scripts\python.exe -m pytest`.
 
-- In this workspace path (`D:\it\Vildly bot`), `uv run pytest` failed with `uv trampoline failed to canonicalize script path`; prefer `.venv\Scripts\python.exe -m pytest` unless the path issue is fixed.
-- `py` on this machine resolved to Python 3.14 without pytest; the checked local venv used Python 3.13 and passed the tests.
-- Running the bot requires `TOKEN` in `.env` or the process environment; `bot/main.py` raises immediately if it is missing.
-- User data defaults to `data/users.db`; Docker overrides `DB_FILE=/app/data/users.db` and persists it through the `vildly_data` named volume.
-- `image/start_img.png`, `image/help_img.png`, and `image/login_img.png` are loaded by relative paths from the repo root and will fail at runtime if missing or if the bot is launched from another cwd.
+Unit-only Linux run without PostgreSQL:
 
-## Testing Notes
+```bash
+TEST_DATABASE_URL= .venv-linux/bin/python -m pytest -p no:cacheprovider -q
+```
 
-- The current test suite only covers `RegistrationService`/`UserStorage`; tests use a pytest `tmp_path` SQLite DB and do not need `TOKEN`.
-- No linter, formatter, typecheck config, CI workflow, or pre-commit config exists in this repo.
+## Database and Test Safety
 
-## Deployment Notes
+- Integration fixtures create and drop all tables in `TEST_DATABASE_URL`. Never point it at development or production data.
+- `UserRepository` uses PostgreSQL `insert`; it is not database-agnostic.
+- Schema creation uses `Base.metadata.create_all()`. Alembic is not configured.
+- Compose `depends_on` does not wait for database health. `init_models()` retries five times.
+- Unit tests cover registration rules, Telegram contact ownership, course callbacks, lesson placeholder, and Back navigation.
+- Integration tests cover user upsert/read and skip without `TEST_DATABASE_URL`.
+- No API, admin, migration, security, or RAG tests exist.
 
-- `pyproject.toml` requires Python `>=3.11`, while the Docker image is `python:3.13-slim`.
-- `amvera.yml` delegates to `Dockerfile`; do not infer a separate Python entrypoint from it.
+## Known Gaps
+
+- `User.email` is declared unique in the model, but existing databases still need an Alembic migration to receive the constraint.
+- `/users`, `/users/{telegram_id}`, and SQLAdmin expose PII without authentication.
+- Compose has hardcoded development DB credentials and no healthcheck.
+- Non-Python course buttons intentionally return a development placeholder.
+- `Book a Lesson` intentionally returns a development placeholder for registered users.
+- Inline `profile` and `help` callbacks have no matching current inline buttons.
+- API returns ORM objects without explicit response schemas.
+- API lifespan does not dispose engine on shutdown.
+- `aiosqlite`, `data/users.db`, and SQLite documentation are legacy; active persistence is PostgreSQL.
+
+## Change Guidelines
+
+- Keep changes scoped; do not refactor adjacent code without approval.
+- Preserve async database access and add tests for changed behavior.
+- Do not change schema without a migration plan.
+- Never expose tokens, credentials, phone numbers, or emails in logs or unauthenticated responses.
+- Distinguish implemented behavior from roadmap intent.
+- Update this file and `docs/1.md`/`docs/2.md` when architecture or scope changes.

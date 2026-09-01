@@ -36,9 +36,13 @@ async def user_repository(db_session):
 
 @pytest_asyncio.fixture
 async def user_storage():
+    yield InMemoryUserStorage()
+
+
+@pytest_asyncio.fixture
+async def database_user_storage():
     if not TEST_DATABASE_URL:
-        yield InMemoryUserStorage()
-        return
+        pytest.skip("TEST_DATABASE_URL is not set")
 
     engine, Session = make_sessionmaker(TEST_DATABASE_URL)
 

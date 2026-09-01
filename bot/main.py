@@ -33,6 +33,16 @@ registration_service = RegistrationService(user_storage)
 
 router = Router()
 
+LESSON_PLACEHOLDER = "🚧 Запись на занятия находится в разработке."
+COURSE_PLACEHOLDER = "🚧 Информация о курсе находится в разработке."
+UNAVAILABLE_COURSE_CALLBACKS = {
+    "course_backend",
+    "course_frontend",
+    "course_ai",
+    "course_discord",
+    "course_telegram",
+}
+
 async def show_lesson_signup(message: Message):
     user_id = message.from_user.id
 
@@ -43,10 +53,7 @@ async def show_lesson_signup(message: Message):
         )
         return
 
-    await message.answer(
-        "Great! 🎓\n\n"
-        "Please enter your preferred day and time for the lesson."
-    )
+    await message.answer(LESSON_PLACEHOLDER)
 
 
 class RegisterState(StatesGroup):
@@ -186,6 +193,12 @@ async def python_course(callback: CallbackQuery):
     await callback.answer()
 
 
+@router.callback_query(F.data.in_(UNAVAILABLE_COURSE_CALLBACKS))
+async def unavailable_course(callback: CallbackQuery):
+    await callback.message.answer(COURSE_PLACEHOLDER)
+    await callback.answer()
+
+
 ##################   Регистрация пользователя    ##################
 ###################################################################
 
@@ -258,10 +271,15 @@ async def lesson_signup_button(message: Message):
 @router.message(F.text == "Back")
 async def back_button(message: Message, state: FSMContext):
     await state.clear()
+    reply_markup = (
+        command_keyboard
+        if await user_storage.is_registered(message.from_user.id)
+        else main_keyboard
+    )
 
     await message.answer(
         "Main menu",
-        reply_markup=main_keyboard,
+        reply_markup=reply_markup,
     )
     
 

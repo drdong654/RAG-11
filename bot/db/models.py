@@ -12,5 +12,5 @@ class User(Base):
     first_name: Mapped[str | None]
     last_name: Mapped[str | None]
     phone_number: Mapped[str | None]
-    email: Mapped[str | None]
+    email: Mapped[str | None] = mapped_column(unique=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)

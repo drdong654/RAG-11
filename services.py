@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 
 from sqlalchemy.exc import IntegrityError
@@ -26,14 +27,23 @@ class RegistrationService:
     def __init__(self, storage: UserStorage):
         self.storage = storage
 
+    def normalize_phone(self, phone: str) -> str:
+        digits = "".join(character for character in phone if character in "0123456789")
+        return f"+{digits}"
+
+    def normalize_email(self, email: str) -> str:
+        return email.strip().lower()
+
     def validate_phone(self, phone: str) -> Optional[str]:
-        digits = phone.removeprefix("+")
-        if not digits.isdigit() or len(digits) < 10:
-            return "Invalid phone number. Must be at least 10 digits."
+        if not re.fullmatch(r"\+?[0-9\s()-]+", phone):
+            return "Invalid phone number. Must contain only digits and common separators."
+        digits = self.normalize_phone(phone).removeprefix("+")
+        if not 10 <= len(digits) <= 15:
+            return "Invalid phone number. Must be between 10 and 15 digits."
         return None
 
     def validate_email(self, email: str) -> Optional[str]:
-        if "@" not in email or "." not in email:
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
             return "Invalid email address."
         return None
 
@@ -49,7 +59,16 @@ class RegistrationService:
         if await self.storage.is_registered(user_id):
             return "You are already registered."
 
-        normalized_email = email.strip().lower()
+        phone_error = self.validate_phone(phone)
+        if phone_error:
+            return phone_error
+
+        normalized_email = self.normalize_email(email)
+        email_error = self.validate_email(normalized_email)
+        if email_error:
+            return email_error
+
+        normalized_phone = self.normalize_phone(phone)
         if await self.storage.email_exists(normalized_email):
             return "This email is already registered."
 
@@ -59,7 +78,7 @@ class RegistrationService:
                 "username": username,
                 "first_name": first_name,
                 "last_name": last_name,
-                "phone_number": phone,
+                "phone_number": normalized_phone,
                 "email": normalized_email,
             })
         except IntegrityError:
