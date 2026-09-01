@@ -43,6 +43,16 @@ UNAVAILABLE_COURSE_CALLBACKS = {
     "course_telegram",
 }
 
+
+async def return_to_main_menu(message: Message, state: FSMContext):
+    await state.clear()
+    reply_markup = (
+        command_keyboard
+        if await user_storage.is_registered(message.from_user.id)
+        else main_keyboard
+    )
+    await message.answer("Main menu", reply_markup=reply_markup)
+
 async def show_lesson_signup(message: Message):
     user_id = message.from_user.id
 
@@ -205,6 +215,10 @@ async def unavailable_course(callback: CallbackQuery):
 #Добавляем обработчик для получения номера телефона и перехода к следующему шагу регистрации
 @router.message(RegisterState.waiting_for_phone)
 async def get_phone(message: Message, state: FSMContext):
+    if message.text == "Back":
+        await return_to_main_menu(message, state)
+        return
+
     ### Accept only Telegram contact sharing from the same account.
     if not message.contact or message.contact.user_id != message.from_user.id:
         await message.answer("Please use the button to share your own phone number.")
@@ -222,6 +236,10 @@ async def get_phone(message: Message, state: FSMContext):
 
 @router.message(RegisterState.waiting_for_email)
 async def get_email(message: Message, state: FSMContext):
+    if message.text == "Back":
+        await return_to_main_menu(message, state)
+        return
+
     ### Email must be typed as text because it will be used for future mailings.
     if not message.text:
         await message.answer("Please enter your email as text.")
@@ -270,17 +288,7 @@ async def lesson_signup_button(message: Message):
 
 @router.message(F.text == "Back")
 async def back_button(message: Message, state: FSMContext):
-    await state.clear()
-    reply_markup = (
-        command_keyboard
-        if await user_storage.is_registered(message.from_user.id)
-        else main_keyboard
-    )
-
-    await message.answer(
-        "Main menu",
-        reply_markup=reply_markup,
-    )
+    await return_to_main_menu(message, state)
     
 
 
