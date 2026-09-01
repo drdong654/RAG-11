@@ -34,6 +34,7 @@ Registration flow: aiogram handler -> `RegistrationService` -> `UserStorage` -> 
 
 - `TOKEN`: required by `bot/main.py` at import time.
 - `DATABASE_URL`: async SQLAlchemy DSN required by bot and API.
+- `API_TOKEN`: bearer token required by the protected User API.
 - `TEST_DATABASE_URL`: optional dedicated PostgreSQL database for integration tests.
 - `EMBEDDING`: read only by incomplete `AI/RAG.py`.
 
@@ -68,12 +69,13 @@ TEST_DATABASE_URL= .venv-linux/bin/python -m pytest -p no:cacheprovider -q
 - Compose `depends_on` does not wait for database health. `init_models()` retries five times.
 - Unit tests cover registration rules, Telegram contact ownership, course callbacks, lesson placeholder, and Back navigation.
 - Integration tests cover user upsert/read and skip without `TEST_DATABASE_URL`.
-- No API, admin, migration, security, or RAG tests exist.
+- User API auth, schemas, 404 behavior, and PII filtering have API tests.
+- No admin, migration, broader security, or RAG tests exist.
 
 ## Known Gaps
 
 - `User.email` is declared unique in the model, but existing databases still need an Alembic migration to receive the constraint.
-- `/users`, `/users/{telegram_id}`, and SQLAdmin expose PII without authentication.
+- `/users` and `/users/{telegram_id}` require `API_TOKEN` and exclude phone/email; SQLAdmin remains unauthenticated until FR-04.
 - Compose has hardcoded development DB credentials and no healthcheck.
 - Non-Python course buttons intentionally return a development placeholder.
 - `Book a Lesson` intentionally returns a development placeholder for registered users.
