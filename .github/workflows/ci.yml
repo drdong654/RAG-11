@@ -30,11 +30,47 @@ jobs:
       - name: Run tests
         run: uv run python -m pytest
 
+  integration-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: bot
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: bot
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bot"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13
+      - name: Install uv
+        run: |
+          pip install uv
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run integration tests against Postgres
+        env:
+          TEST_DATABASE_URL: postgresql+asyncpg://bot:test@localhost:5432/bot
+        run: uv run python -m pytest tests/integration -v
+
 ### CD ###
 
   deploy:
 
-    needs: test
+    needs: [test, integration-test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps: 
