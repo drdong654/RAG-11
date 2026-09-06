@@ -37,20 +37,8 @@ class UserRepository:
 
     async def is_registered(self, telegram_id):
         user = await self.get_by_telegram_id(telegram_id)
-        return user is not None and user.phone_number is not None and user.email is not None
+        return user is not None and user.phone_number is not None
 
-    async def email_exists(self, email):
-        result = await self._session.execute(select(User).where(User.email == email))
-        return result.scalar_one_or_none() is not None
-
-    async def add_user_details(self, telegram_id, phone_number, email):
-        user = await self.get_by_telegram_id(telegram_id)
-        if user:
-            user.phone_number = phone_number
-            user.email = email
-            await self._session.commit()
-            return user
-        return None
 
     async def add_user(self, user_data):
         stmt = (
@@ -61,7 +49,6 @@ class UserRepository:
                 first_name=user_data.get("first_name"),
                 last_name=user_data.get("last_name"),
                 phone_number=user_data.get("phone_number"),
-                email=user_data.get("email"),
             )
             .on_conflict_do_update(
                 index_elements=["telegram_id"],
@@ -70,7 +57,6 @@ class UserRepository:
                     "first_name": user_data.get("first_name"),
                     "last_name": user_data.get("last_name"),
                     "phone_number": user_data.get("phone_number"),
-                    "email": user_data.get("email"),
                 },
             )
         )
