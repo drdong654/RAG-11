@@ -8,7 +8,12 @@ dependencies = [
     "agno>=2.8.5",
     "aiogram==3.29.1",
     "aiosqlite>=0.22.1",
+    "fastapi>=0.141.1",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "python-dotenv==1.2.2",
+    "sqladmin>=0.31.0",
+    "uvicorn>=0.52.3",
+    "asyncpg>=0.30.0",
+    "sqlalchemy>=2.0.0",
 ]

@@ -1,3 +1,5 @@
+#keyboard.py
+
 from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -29,6 +31,7 @@ command_keyboard = ReplyKeyboardMarkup(
 contact_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="Share phone number", request_contact=True)],
+        [KeyboardButton(text="Back")]
     ],
     resize_keyboard=True,
     one_time_keyboard=True,

@@ -1,3 +1,5 @@
+#bot.main.py
+
 import asyncio
 import os
 
@@ -9,8 +11,10 @@ from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 from aiogram.types import FSInputFile
 from dotenv import load_dotenv
 
+from bot.db.engine import make_sessionmaker, init_models
 from bot.keyboard import main_keyboard, command_keyboard, contact_keyboard, courses_keyboard
 from services import UserStorage, RegistrationService
+
 
 load_dotenv()
 
@@ -18,7 +22,12 @@ TOKEN = os.getenv("TOKEN")
 if not TOKEN:
     raise RuntimeError("TOKEN is not set. Add TOKEN to .env or environment variables.")
 
-user_storage = UserStorage()
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not set. Add DATABASE_URL to .env or environment variables.")
+
+engine, Session = make_sessionmaker(DATABASE_URL)
+user_storage = UserStorage(Session)
 registration_service = RegistrationService(user_storage)
 
 
@@ -27,7 +36,7 @@ router = Router()
 async def show_lesson_signup(message: Message):
     user_id = message.from_user.id
 
-    if not user_storage.is_registered(user_id):
+    if not await user_storage.is_registered(user_id):
         await message.answer(
             "You must complete registration first.\n\n"
             "Use /login to continue."
@@ -47,7 +56,7 @@ class RegisterState(StatesGroup):
 
 async def show_start(message: Message):
     photo = FSInputFile("image/start_img.png")
-    reply_markup = command_keyboard if user_storage.is_registered(message.from_user.id) else main_keyboard
+    reply_markup = command_keyboard if await user_storage.is_registered(message.from_user.id) else main_keyboard
 
 
     await message.answer_photo(
@@ -77,7 +86,7 @@ async def show_help(message: Message):
 
 async def show_profile(message: Message):
     user_id = message.from_user.id
-    if user_storage.is_registered(user_id):
+    if await user_storage.is_registered(user_id):
 
         await message.answer("Welcome, home!", reply_markup=command_keyboard)
     else:
@@ -116,20 +125,31 @@ async def profile_button_text(message: Message):
     await show_profile(message)
 
 
+
 #Добавляем команду login и кнопку Login
 async def show_login(message: Message, state: FSMContext):
-    if user_storage.is_registered(message.from_user.id):
+    if await user_storage.is_registered(message.from_user.id):
 
         await message.answer("You are already registered.", reply_markup=command_keyboard)
         return
 
     photo = FSInputFile("image/login_img.png")
     await state.set_state(RegisterState.waiting_for_phone)
+    await message.answer(
+        "Personal Data Consent\n"
+        "\n"
+        "By sending your contact information, you consent to the collection, storage, and processing of your personal data for the purpose of providing our services.\n"
+        "By proceeding, you confirm that you have read and accepted our Privacy Policy."
+    )
     await message.answer_photo(
         photo=photo,
-        caption="Share your phone number using the button below:",
+        caption="Share your phone number using the button below:", 
         reply_markup=contact_keyboard,
     )
+
+
+
+
 
 
 @router.message(Command("login"))
@@ -202,7 +222,7 @@ async def get_email(message: Message, state: FSMContext):
 
     data = await state.get_data()
     user = message.from_user
-    result = registration_service.register(
+    result = await registration_service.register(
         user_id=user.id,
         phone=data["phone_number"],
         email=email,
@@ -236,11 +256,18 @@ async def lesson_signup_button(message: Message):
 
 
 @router.message(F.text == "Back")
-async def back_button(message: Message):
-    await message.answer("Main menu", reply_markup=main_keyboard)
+async def back_button(message: Message, state: FSMContext):
+    await state.clear()
+
+    await message.answer(
+        "Main menu",
+        reply_markup=main_keyboard,
+    )
+    
 
 
 async def main():
+    await init_models(engine)
     bot = Bot(token=TOKEN)
     dp = Dispatcher()
     dp.include_router(router)
