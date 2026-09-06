@@ -21,9 +21,6 @@ class InMemoryUserStorage:
     async def is_registered(self, user_id: int) -> bool:
         return user_id in self._users
 
-    async def email_exists(self, email: str) -> bool:
-        return any(user["email"] == email for user in self._users.values())
-
     async def add_user(self, user_data: dict) -> None:
         self._users[user_data["user_id"]] = user_data
 
